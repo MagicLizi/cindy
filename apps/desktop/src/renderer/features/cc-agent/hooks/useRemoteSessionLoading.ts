@@ -13,6 +13,7 @@ export function useRemoteSessionLoading({
   contentSyncing,
   hasMessages,
   connectionNotice,
+  hasTaskHeader,
 }: {
   sessionId: string | undefined;
   remoteDeviceId: string | undefined;
@@ -20,7 +21,8 @@ export function useRemoteSessionLoading({
   contentSyncing: boolean;
   hasMessages: boolean;
   connectionNotice: boolean;
-}): 'hidden' | 'loading' | 'syncing' {
+  hasTaskHeader: boolean;
+}): 'hidden' | 'loading' | 'syncing' | 'inline-syncing' {
   const active =
     !!sessionId && !!remoteDeviceId && !connectionNotice && (!historyLoaded || contentSyncing);
   const [revealed, setRevealed] = useState<{ sessionId: string; deviceId: string } | null>(null);
@@ -34,10 +36,10 @@ export function useRemoteSessionLoading({
     return () => clearTimeout(timer);
   }, [active, sessionId, remoteDeviceId]);
 
-  // The store explicitly invalidated history while retaining messages: the
-  // displayed content needs refreshing, so show feedback immediately.
-  const immediate = hasMessages && !historyLoaded;
+  // Cold-cache hydration also retains historyLoaded=false; it is not evidence
+  // of stale content and must not bypass the ordinary anti-flash delay.
   const delayElapsed = revealed?.sessionId === sessionId && revealed?.deviceId === remoteDeviceId;
-  if (!active || (!immediate && !delayElapsed)) return 'hidden';
-  return hasMessages ? 'syncing' : 'loading';
+  if (!active || !delayElapsed) return 'hidden';
+  if (!hasMessages) return 'loading';
+  return hasTaskHeader ? 'syncing' : 'inline-syncing';
 }

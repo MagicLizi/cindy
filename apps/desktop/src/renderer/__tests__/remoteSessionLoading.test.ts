@@ -13,6 +13,7 @@ const cached = {
   contentSyncing: true,
   hasMessages: true,
   connectionNotice: false,
+  hasTaskHeader: true,
 };
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => {
@@ -47,11 +48,27 @@ describe('remote task loading feedback', () => {
     expect(result.current).toBe('hidden');
   });
 
-  it('shows known invalidated history immediately', () => {
-    const { result } = renderHook(() =>
-      useRemoteSessionLoading({ ...cached, historyLoaded: false }),
-    );
+  it('does not flash when cold cache arrives before a fast remote read', () => {
+    const props = { ...cached, historyLoaded: false, hasMessages: false };
+    const { result, rerender } = renderHook(useRemoteSessionLoading, { initialProps: props });
+    advance(50);
+    rerender({ ...props, hasMessages: true });
+    expect(result.current).toBe('hidden');
+    advance(100);
+    rerender({ ...cached, contentSyncing: false });
+    advance(250);
+    expect(result.current).toBe('hidden');
+  });
+
+  it('keeps feedback in the viewport when a bot or embedded pane has no task header', () => {
+    const props = { ...cached, hasTaskHeader: false };
+    const { result, rerender } = renderHook(useRemoteSessionLoading, { initialProps: props });
+    advance(250);
+    expect(result.current).toBe('inline-syncing');
+    rerender({ ...props, hasTaskHeader: true });
     expect(result.current).toBe('syncing');
+    rerender({ ...props, connectionNotice: true });
+    expect(result.current).toBe('hidden');
   });
 
   it('never flashes feedback when a read finishes within the delay', () => {
