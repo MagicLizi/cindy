@@ -2255,3 +2255,15 @@ PC 同源 ghostPermissionItems 声明摘要投影并排除 tool，以请求 loca
 会先在来源 Agent 里停用这些机器人再由伙伴连接；旧控制端的预览校验不认识新分类，所以照旧把 Telegram / Discord
 放在 `connections`、不停来源，也不出现飞书 / 企业微信 / 钉钉条目。分类随预览快照与加密检查点保存，开始导入和恢复
 都按当时的分类执行。不改 relay 帧、服务端 schema 或 Mobile 原生指纹。
+
+## 跨电脑任务行动回执
+
+`maker:session:handoff` 增量支持 `task-action-capability` 与 `validate-task-action`。
+新发送端先查询 `taskActionVersion: 1`，再发送带 Host 生成 `taskActionReceipt` 的消息；
+缺能力时明确拒绝，不回退到旧发送方式。新接收端拒绝缺回执的旧请求，要求发送端更新。
+完整任务互发需要两台电脑均升级；同账号鉴权、隐藏任务和共享访客限制不扩大。
+
+回执只存在发送 Host 内存，绑定接收设备、发送任务、目标任务与正文，最长一小时；
+接收端一次认领，强制经队列，在消费前回调发送 Host 复核。断线、撤销、账号切换或重启后
+无法复核时不投递，不自动重放；已送达历史保留。未知投递结果仍要求先读取目标核实。
+没有新 relay channel、服务端变更、数据库 migration 或 Mobile 原生指纹变化。
